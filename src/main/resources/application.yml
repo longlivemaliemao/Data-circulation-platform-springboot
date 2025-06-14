@@ -40,4 +40,4 @@ logging:
 
 file:
   storage:
-    directory: C:\\Users\\zzy\\Desktop\\1
+    directory: /fileupload

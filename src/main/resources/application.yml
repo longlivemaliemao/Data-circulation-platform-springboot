@@ -1,0 +1,43 @@
+spring:
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  datasource:
+#    url: jdbc:oracle:thin:@121.40.65.1:1521:orcl?useUnicode=true&characterEncoding=ZHS16GBK
+    url: jdbc:oracle:thin:@localhost:1521:orcl?useUnicode=true&characterEncoding=ZHS16GBK
+    username: zzy
+    password: 123456
+    driver-class-name: oracle.jdbc.OracleDriver
+  sql:
+    init:
+      mode: always
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  servlet:
+    multipart:
+      max-file-size: 128MB  # 设置最大文件大小
+      max-request-size: 128MB  # 设置请求总大小
+
+server:
+  port: 8082
+  tomcat:
+    max-swallow-size: 0  # 设置为0表示不限制
+
+
+mybatis-plus:
+  mapper-locations: classpath*:mapper/*.xml
+  type-aliases-package: com.example.demo.Model
+
+logging:
+  logback:
+    rollingpolicy:
+      file-name-pattern: logs/application-%d{yyyy-MM-dd}.%i.log
+      max-file-size: 10MB
+      max-history: 7
+      total-size-cap: 100MB
+
+file:
+  storage:
+    directory: C:\\Users\\zzy\\Desktop\\1

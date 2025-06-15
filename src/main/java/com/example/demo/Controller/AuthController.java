@@ -142,6 +142,10 @@ public class AuthController {
             String encryptedPassword = (String) requestBody.get("password");
             String securityQuestion = (String) requestBody.get("securityQuestion");
             String securityAnswer = (String) requestBody.get("securityAnswer");
+            List<String> userNames = userMapper.findAllUsername();
+            if (userNames.contains(username)) {
+                return APIResponse.error(400, "用户已存在");
+            }
 
             // 1. 从会话中获取先前存储的共享密钥
             byte[] sharedSecret = (byte[]) session.getAttribute("sharedSecret");
@@ -246,30 +250,25 @@ public class AuthController {
         return APIResponse.success(token);
     }
 
-    @PostMapping("/validate")
-    public APIResponse<String> validateCode(@RequestBody Map<String, String> requestBody) {
-        String username = requestBody.get("username");
-        String securityQuestion = requestBody.get("securityQuestion");
-        String securityAnswer =  requestBody.get("securityAnswer");
-
-        String SecurityQuestion = userMapper.findSecurityQuestion(username);
-        String SecurityAnswer = userMapper.findSecurityAnswer(username);
-        if(!SecurityQuestion.equals(securityQuestion)) {
-            return APIResponse.error(400,"密保问题不正确");
-        }
-        if(!SecurityAnswer.equals(securityAnswer)) {
-            return APIResponse.error(400,"密保答案不正确");
-        } else
-        {
-            return APIResponse.success("验证成功");
-        }
-    }
-
-    @PostMapping("/update_password")
-    public APIResponse<String> updatePassword(@RequestBody Map<String, String> requestBody, HttpSession session) {
+    @PostMapping("/forget_password")
+    public APIResponse<String> forgetPassword(@RequestBody Map<String, String> requestBody, HttpSession session) {
         try {
             String username = requestBody.get("username");
             String encryptedPassword = requestBody.get("password");
+            String securityQuestion = requestBody.get("securityQuestion");
+            String securityAnswer =  requestBody.get("securityAnswer");
+            List<String> userNames = userMapper.findAllUsername();
+            if (!userNames.contains(username)) {
+                return APIResponse.error(400, "用户不存在");
+            }
+            String SecurityQuestion = userMapper.findSecurityQuestion(username);
+            String SecurityAnswer = userMapper.findSecurityAnswer(username);
+            if(!SecurityQuestion.equals(securityQuestion)) {
+                return APIResponse.error(400,"密保问题不正确");
+            }
+            if(!SecurityAnswer.equals(securityAnswer)) {
+                return APIResponse.error(400,"密保答案不正确");
+            }
 
             // 1. 从会话中获取先前存储的共享密钥
             byte[] sharedSecret = (byte[]) session.getAttribute("sharedSecret");

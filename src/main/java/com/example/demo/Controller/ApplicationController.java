@@ -8,6 +8,7 @@ import com.example.demo.Model.APIResponse;
 import com.example.demo.Model.SignTaskUser;
 import com.example.demo.Model.Task;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -96,11 +97,12 @@ public class ApplicationController {
     }
 
     /**
-     * 审核员同意或拒绝申请
+     * 审批员和数据提供方同意或拒绝申请
      * @param requestData 包含用户名、状态和解释的 Map 对象
      * @return 操作结果
      */
     @PostMapping("/update")
+    @PreAuthorize("hasAuthority('审批员') OR hasAuthority('数据提供方')")
     public APIResponse<String> updateApplication(@RequestBody Map<String, String> requestData) {
         try {
 
@@ -127,6 +129,7 @@ public class ApplicationController {
      * @return 返回包含所有 "等待平台审核" 状态申请记录的 APIResponse 列表。
      */
     @GetMapping("/pending2")
+    @PreAuthorize("hasAuthority('审批员')")
     public APIResponse<List<Application>> getPending2Applications() {
         try {
             List<Application> pendingApplications = applicationMapper.findApplicationsWaiting2();
@@ -145,6 +148,7 @@ public class ApplicationController {
      * @return 返回包含所有 "等待数据提供方审核" 状态申请记录的 APIResponse 列表。
      */
     @GetMapping("/pending1")
+    @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<Application>> getPending1Applications(@RequestParam("username") String username) {
         try {
             List<Application> pendingApplications = applicationMapper.findApplicationsWaiting1(username);

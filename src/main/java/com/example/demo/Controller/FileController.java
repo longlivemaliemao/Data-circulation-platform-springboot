@@ -7,6 +7,7 @@ import com.example.demo.Model.Handle;
 import com.example.demo.Service.ECDHService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpSession;
@@ -36,6 +37,7 @@ public class FileController {
     private FileMapper fileMapper;
 
     @GetMapping("/filesName")
+    @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<String>> getFileNamesByCreatorName(@RequestParam("creatorName") String creatorName) {
         try {
             List<String> fileNames = fileMapper.findFileByCreatorName(creatorName);
@@ -47,6 +49,7 @@ public class FileController {
     }
 
     @GetMapping("/files")
+    @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<File>> getFilesByCreatorName(@RequestParam("creatorName") String creatorName) {
         try {
             List<File> fileNames = fileMapper.findFilesByCreatorName(creatorName);
@@ -58,6 +61,7 @@ public class FileController {
     }
 
     @GetMapping("/start-upload")
+    @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<String> startUpload(HttpSession session) {
         // 生成唯一的文件标识符
         String fileId = UUID.randomUUID().toString();
@@ -66,6 +70,7 @@ public class FileController {
     }
 
     @PostMapping("/upload-chunk")
+    @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<String> uploadChunk(
             @RequestParam("chunk") MultipartFile chunk,
             @RequestParam("chunkIndex") int chunkIndex,

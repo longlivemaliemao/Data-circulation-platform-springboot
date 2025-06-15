@@ -7,6 +7,7 @@ import com.example.demo.Model.User;
 import com.example.demo.Service.CustomUserDetailsService;
 import com.example.demo.Service.ECDHService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,6 +47,7 @@ public class AdminController {
      * @return APIResponse<String> 包含请求处理的结果信息
      */
     @PostMapping("/update-user")
+    @PreAuthorize("hasAuthority('Admin')")
     public APIResponse<String> modifyUserRole(@RequestBody Map<String, Object> requestBody) {
 
         Integer id = (Integer) requestBody.get("id");
@@ -79,6 +81,7 @@ public class AdminController {
      * @return APIResponse<String> 包含请求处理的结果信息
      */
     @PostMapping("/delete-user")
+    @PreAuthorize("hasAuthority('Admin')")
     public APIResponse<String> deleteUser(@RequestBody Map<String, Object> requestBody) {
         // 从请求体中提取用户名
         String username = (String) requestBody.get("username");
@@ -104,6 +107,7 @@ public class AdminController {
      * @return APIResponse<List<Map<String, String>>> 包含所有用户的用户名、ID 和权限信息
      */
     @GetMapping("/allUsers")
+    @PreAuthorize("hasAuthority('Admin')")
     public APIResponse<List<Map<String, Object>>> getAllUsers() {
         try {
             // 调用 CustomUserDetailsService 的方法获取所有用户

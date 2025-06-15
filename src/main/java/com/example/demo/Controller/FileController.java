@@ -81,6 +81,10 @@ public class FileController {
             @RequestParam("fileOutline") String fileOutline,
             HttpSession session) {
         try {
+            List<String> FileNames = fileMapper.findFileByCreatorName(creatorName);
+            if (FileNames.contains(fileName)) {
+                return APIResponse.error(500, "文件名已被使用");
+            }
             byte[] sharedSecret = (byte[]) session.getAttribute("sharedSecret");
             if (sharedSecret == null) {
                 return APIResponse.error(500, "共享密钥不存在于会话中");

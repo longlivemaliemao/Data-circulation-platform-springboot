@@ -8,6 +8,7 @@ import com.example.demo.Service.CustomUserDetailsService;
 import com.example.demo.Service.ECDHService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -133,44 +134,62 @@ public class AdminController {
     @PostMapping("/update-mpi")
     public APIResponse<String> updateMPI(@RequestBody Map<String, Object> requestBody, HttpSession session) {
         try {
-            int id = (int) requestBody.get("id");
+            // 获取当前登录用户的 ID
+            String originUserName = SecurityContextHolder.getContext().getAuthentication().getName();
+            int id = userMapper.findIdByUsername(originUserName);
+
+            // 从请求体中获取更新字段
             String username = (String) requestBody.get("username");
             String securityQuestion = (String) requestBody.get("securityQuestion");
             String securityAnswer = (String) requestBody.get("securityAnswer");
             String encryptedPassword = (String) requestBody.get("password");
 
-
-            if(!Objects.equals(username, "")){
+            // 更新用户名
+            if (username != null && !username.trim().isEmpty()) {
+                List<String> userNames = userMapper.findAllUsername();
+                if (userNames.contains(username) && !username.equals(originUserName)) {
+                    return APIResponse.error(400, "用户名已被使用");
+                }
                 userMapper.update1(username, id);
             }
-            if(!Objects.equals(securityQuestion, "")){
-                userMapper.update2(securityQuestion, securityAnswer, id);
-            }
-            if(!Objects.equals(encryptedPassword, "")){
-                // 1. 从会话中获取先前存储的共享密钥
-                byte[] sharedSecret = (byte[]) session.getAttribute("sharedSecret");
 
-                // 如果共享密钥不存在，返回错误响应
+            // 更新密保问题和答案的逻辑
+            boolean questionIsBlank = securityQuestion == null || securityQuestion.trim().isEmpty();
+            boolean answerIsBlank = securityAnswer == null || securityAnswer.trim().isEmpty();
+
+            if (!questionIsBlank && !answerIsBlank) {
+                // 问题和答案都不为空，执行更新
+                userMapper.update2(securityQuestion, securityAnswer, id);
+            } else if (questionIsBlank && answerIsBlank) {
+                // 问题和答案都为空，继续执行后续代码
+            } else {
+                // 其中一个为空，另一个不为空，返回 400 错误
+                return APIResponse.error(400, "密保问题和答案必须同时提供或同时不提供");
+            }
+
+            // 更新密码
+            if (encryptedPassword != null && !encryptedPassword.isEmpty()) {
+                byte[] sharedSecret = (byte[]) session.getAttribute("sharedSecret");
                 if (sharedSecret == null) {
                     return APIResponse.error(400, "共享密钥未找到，请重新进行密钥交换");
                 }
-
-                // 2. 使用共享密钥解密客户端发送的密码和公钥
-                String decryptedPassword = dhService.decrypt(encryptedPassword, sharedSecret);
-
-                String password = passwordEncoder.encode(decryptedPassword);
-                userMapper.update3(password, id);
+                try {
+                    String decryptedPassword = dhService.decrypt(encryptedPassword, sharedSecret);
+                    String password = passwordEncoder.encode(decryptedPassword);
+                    userMapper.update3(password, id);
+                } catch (Exception e) {
+                    return APIResponse.error(400, "密码解密失败");
+                }
             }
 
+            // 获取更新后的用户对象
             User user = userMapper.findByID(id);
 
-            // 如果认证成功，生成 JWT token
+            // 生成新的 JWT token
             String token = jwtUtil.generateToken(user.getUsername(), user.getRole(), id);
             return APIResponse.success(token);
         } catch (Exception e) {
-        // 捕获异常，返回500错误和错误信息
-        return new APIResponse<>(500, "用户信息修改失败", null);
-    }
-
+            return new APIResponse<>(500, "用户信息修改失败", null);
+        }
     }
 }

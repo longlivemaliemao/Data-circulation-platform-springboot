@@ -36,6 +36,12 @@ public class ApplicationController {
     public APIResponse<String> addApplication(@RequestBody Application application) {
         try {
 
+            if (!Objects.equals(application.getApplicationType(), "签名")) {
+                List<Integer> TaskIDs = taskMapper.findCompletedDataTaskIDs();
+                if(!TaskIDs.contains(Integer.parseInt(application.getText()))){
+                    return APIResponse.error(400,"未找到该数据流转任务ID");
+                }
+            }
             if(Objects.equals(application.getApplicationType(), "仲裁")){
                 boolean ok = false;
                 String taskId = application.getText();

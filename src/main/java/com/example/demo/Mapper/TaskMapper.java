@@ -40,4 +40,7 @@ public interface TaskMapper {
     @Select("SELECT * FROM task WHERE status = 'completed' AND task_type = '签名'")
     List<Task> findCompletedDataTasks();
 
+    @Select("SELECT task_id FROM task WHERE status = 'completed' AND task_type = '签名'")
+    List<Integer> findCompletedDataTaskIDs();
+
 }

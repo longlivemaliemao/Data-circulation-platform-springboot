@@ -22,12 +22,13 @@ public class Application {
     private Date startDate;
     private Date endDate;
     private Date applicationTime;
+    private Date authEndTime;
 
     // 构造函数
     public Application() {
     }
 
-    public Application(int id, String username, String fileName, String applicationType, String explanation, String text, String dataUser, String status, Date startDate, Date endDate, Date applicationTime) {
+    public Application(int id, String username, String fileName, String applicationType, String explanation, String text, String dataUser, String status, Date startDate, Date endDate, Date applicationTime, Date authEndTime) {
         this.id = id;
         this.username = username;
         this.fileName = fileName;
@@ -39,6 +40,7 @@ public class Application {
         this.startDate = startDate;
         this.endDate = endDate;
         this.applicationTime = applicationTime;
+        this.authEndTime = authEndTime;
     }
 
     // Getters and Setters
@@ -131,6 +133,9 @@ public class Application {
         this.applicationTime = applicationTime;
     }
 
+    public Date getAuthEndTime() {return authEndTime;}
+    public void setAuthEndTime(Date authEndTime) {this.authEndTime = authEndTime;}
+
     @Override
     public String toString() {
         return "Application{" +
@@ -145,6 +150,7 @@ public class Application {
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
                 ", applicationTime=" + applicationTime +
+                ", authEndTime=" + authEndTime +
                 '}';
     }
 }

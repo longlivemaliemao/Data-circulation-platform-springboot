@@ -9,6 +9,7 @@ import com.example.demo.Util.JwtTokenUtil;
 
 import javax.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,6 +48,7 @@ public class AuthController {
 
 
     @PostMapping("/find-username")
+    @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<String> findUsername(@RequestBody Map<String, Object> requestBody) {
         try{
             String username = (String) requestBody.get("username");

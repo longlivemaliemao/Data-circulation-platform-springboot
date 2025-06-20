@@ -13,6 +13,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -104,6 +105,7 @@ public class TaskController {
             task.setUsername(createTaskRequest.getUsername());
             task.setApplicationId(createTaskRequest.getApplicationId());
             task.setUsagePolicy("");
+            applicationMapper.updateAuthEndTime(createTaskRequest.getApplicationId(),new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(createTaskRequest.getAuthEndTime()));
             // 创建 SecureRandom 实例
             SecureRandom random = new SecureRandom();
             // 生成 1024 位随机数

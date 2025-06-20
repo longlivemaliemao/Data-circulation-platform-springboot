@@ -10,6 +10,7 @@ public class CreateTaskRequest {
     private String username;
     private Integer applicationId;
     private String usagePolicy;
+    private String authEndTime;
 
 // Getter 和 Setter
 
@@ -68,6 +69,9 @@ public class CreateTaskRequest {
     public void setUsagePolicy(String usagePolicy) {
         this.usagePolicy = usagePolicy;
     }
+
+    public String getAuthEndTime() {return authEndTime;}
+    public void setAuthEndTime(String authEndTime) {this.authEndTime = authEndTime;}
 
     public static class Signer {
         private List<SignerMember> members;

@@ -1,13 +1,16 @@
 package com.example.demo.Controller;
 
+import com.example.demo.Mapper.ApplicationMapper;
 import com.example.demo.Mapper.FileMapper;
 import com.example.demo.Model.APIResponse;
+import com.example.demo.Model.Application;
 import com.example.demo.Model.File;
 import com.example.demo.Model.Handle;
 import com.example.demo.Service.ECDHService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpSession;
@@ -35,6 +38,9 @@ public class FileController {
 
     @Autowired
     private FileMapper fileMapper;
+
+    @Autowired
+    private ApplicationMapper applicationMapper;
 
     @GetMapping("/filesName")
     @PreAuthorize("hasAuthority('数据提供方')")
@@ -122,6 +128,7 @@ public class FileController {
 
     @GetMapping("/download")
     public StreamingResponseBody downloadFile(@RequestParam("fileName") String fileName,
+                                              @RequestParam("applicationId")  int applicationId,
                                               HttpServletResponse response) {
         return outputStream -> {
             try {
@@ -136,6 +143,12 @@ public class FileController {
                     throw new FileNotFoundException("File not found on server");
                 }
 
+                String username = SecurityContextHolder.getContext().getAuthentication().getName();
+                Date authEndTime = applicationMapper.findAuthEndTime(username,fileName,applicationId);
+                Date now = new Date();
+                if (authEndTime == null || now.after(authEndTime)) {
+                    throw new FileNotFoundException("File not found");
+                }
 
                 // 设置响应内容类型和文件名
                 response.setContentType("text/csv");

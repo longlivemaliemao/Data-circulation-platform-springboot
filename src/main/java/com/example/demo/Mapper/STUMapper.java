@@ -37,7 +37,7 @@ public interface STUMapper {
     int findSignerNumber(int taskId, String username);
 
     // 根据 taskId 查找所有的任务
-    @Select("SELECT * FROM signtask_user WHERE task_id = #{taskId}")
+    @Select("SELECT * FROM signtask_user WHERE task_id = #{taskId} ORDER BY SIGNER_NUMBER")
     List<SignTaskUser> findTaskByTaskId(int taskId);
 
     // 根据 taskId 和 username 查找用户

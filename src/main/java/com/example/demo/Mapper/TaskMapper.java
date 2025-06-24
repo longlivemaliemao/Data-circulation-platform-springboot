@@ -33,8 +33,8 @@ public interface TaskMapper {
     Task findTaskById(int taskId);
 
     // 根据 taskId 查找对应签名任务申请ID
-    @Select("SELECT SIGNAPPLICATION_ID FROM task WHERE task_id = #{taskId}")
-    void findSignTaskIDById(int taskId);
+    @Select("SELECT task_id FROM task WHERE APPLICATION_ID = #{applicationId}")
+    int findTaskIdByApplicationId(int applicationId);
 
     // 根据状态和任务类型查询所有状态为 completed 且任务类型为签名的任务
     @Select("SELECT * FROM task WHERE status = 'completed' AND task_type = '签名'")

@@ -20,7 +20,7 @@ public interface CTUMapper {
     List<ConfirmTaskUser> findTasksByUserName(String userName);
 
     // 根据 taskId 查找所有的任务
-    @Select("SELECT * FROM CONFIRM_USER WHERE task_id = #{taskId}")
+    @Select("SELECT * FROM CONFIRM_USER WHERE task_id = #{taskId} ORDER BY CONFIRM_NUMBER")
     List<ConfirmTaskUser> findTaskByTaskId(int taskId);
 
     // 根据 taskId 和 userName 更新 status

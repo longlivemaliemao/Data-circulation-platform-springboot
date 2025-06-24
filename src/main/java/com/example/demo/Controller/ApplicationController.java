@@ -1,20 +1,13 @@
 package com.example.demo.Controller;
 
-import com.example.demo.Mapper.ApplicationMapper;
-import com.example.demo.Mapper.STUMapper;
-import com.example.demo.Mapper.TaskMapper;
-import com.example.demo.Model.Application;
-import com.example.demo.Model.APIResponse;
-import com.example.demo.Model.SignTaskUser;
-import com.example.demo.Model.Task;
+import com.example.demo.Mapper.*;
+import com.example.demo.Model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Date;
-import java.util.Objects;
+import java.util.*;
 
 @RestController
 @RequestMapping("/application")
@@ -26,6 +19,12 @@ public class ApplicationController {
     private TaskMapper taskMapper;
     @Autowired
     private STUMapper stuMapper;  // 注入 STUMapper，用于签名任务用户数据操作
+    @Autowired
+    private CTUMapper ctuMapper;
+    @Autowired
+    private ATUMapper atuMapper;
+    @Autowired
+    private UserMapper userMapper;
 
     /**
      * 插入新的申请记录到数据库
@@ -168,5 +167,73 @@ public class ApplicationController {
         }
     }
 
+    @PostMapping("/getProcessStatus")
+    public APIResponse<List<Map<String, Object>>> getProcessStatus(@RequestBody Map<String, Object> requestData) {
+        try {
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            int applicationId = (int) requestData.get("id");
+            String applicationType = (String) requestData.get("applicationType");
+            String status = applicationMapper.findStatus(applicationId);
 
+            // 状态不合法则不允许查看流程状态
+            if (status.equals("等待平台审核") || status.equals("平台审核未通过") ||
+                    status.equals("等待数据提供方审核") || status.equals("数据提供方审核未通过")) {
+                return APIResponse.error(400, "当前申请状态不支持查看流程状态");
+            }
+
+            int taskId = taskMapper.findTaskIdByApplicationId(applicationId);
+            List<Map<String, Object>> processStatus = new ArrayList<>();
+            List<String> userLists = new ArrayList<>();
+
+            if ("签名".equals(applicationType)) {
+                List<SignTaskUser> signTaskUsers = stuMapper.findTaskByTaskId(taskId);
+                for (SignTaskUser signTaskUser : signTaskUsers) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("username", signTaskUser.getUserName());
+                    map.put("status", signTaskUser.getStatus());
+                    map.put("role",userMapper.findByUsername(signTaskUser.getUserName()).getRole());
+                    map.put("order",signTaskUser.getSignerNumber());
+                    processStatus.add(map);
+                    userLists.add(signTaskUser.getUserName());
+                }
+
+            } else if ("确权".equals(applicationType)) {
+                List<ConfirmTaskUser> confirmTaskUsers = ctuMapper.findTaskByTaskId(taskId);
+                for (ConfirmTaskUser confirmTaskUser : confirmTaskUsers) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("username", confirmTaskUser.getUserName());
+                    map.put("status", confirmTaskUser.getStatus());
+                    map.put("role",userMapper.findByUsername(confirmTaskUser.getUserName()).getRole());
+                    map.put("order",confirmTaskUser.getConfirmNumber());
+                    processStatus.add(map);
+                    userLists.add(confirmTaskUser.getUserName());
+                }
+
+            } else if ("仲裁".equals(applicationType)) {
+                List<ArbitrationTaskUser> arbitrationTaskUsers = atuMapper.findAll(taskId);
+                for (ArbitrationTaskUser arbitrationTaskUser : arbitrationTaskUsers) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("username", arbitrationTaskUser.getUserName());
+                    map.put("status", arbitrationTaskUser.getStatus());
+                    map.put("role",userMapper.findByUsername(arbitrationTaskUser.getUserName()).getRole());
+                    map.put("order",arbitrationTaskUser.getArbitrationNumber());
+                    processStatus.add(map);
+                    userLists.add(arbitrationTaskUser.getUserName());
+                }
+
+            } else {
+                return APIResponse.error(400, "不支持的申请类型：" + applicationType);
+            }
+
+            // 当前用户不在任务用户列表中，无权限查看
+            if (!userLists.isEmpty() && !userLists.contains(username)) {
+                return APIResponse.error(403, "当前用户无权限查看该流程状态");
+            }
+
+            return APIResponse.success(processStatus);
+
+        } catch (Exception e) {
+            return APIResponse.error(500, "系统内部错误: " + e.getMessage());
+        }
+    }
 }

@@ -4,6 +4,7 @@ import com.example.demo.Mapper.*;
 import com.example.demo.Model.*;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,10 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @RestController
 @RequestMapping("/task")
@@ -105,7 +103,6 @@ public class TaskController {
             task.setUsername(createTaskRequest.getUsername());
             task.setApplicationId(createTaskRequest.getApplicationId());
             task.setUsagePolicy("");
-            applicationMapper.updateAuthEndTime(createTaskRequest.getApplicationId(),new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(createTaskRequest.getAuthEndTime()));
             // 创建 SecureRandom 实例
             SecureRandom random = new SecureRandom();
             // 生成 1024 位随机数
@@ -126,6 +123,7 @@ public class TaskController {
                 task.setF2("");
                 task.setUsagePolicy(createTaskRequest.getUsagePolicy());
                 task.setSignApplicationId(-1);
+                applicationMapper.updateAuthEndTime(createTaskRequest.getApplicationId(),new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(createTaskRequest.getAuthEndTime()));
             } else  {
                 task.setConfirmId(createTaskRequest.getConfirmId());
                 Task task1 = taskMapper.findTaskById(Integer.parseInt(task.getConfirmId()));
@@ -244,7 +242,7 @@ public class TaskController {
     @PostMapping("/signUpdate")
     public APIResponse<String> signUpdateTask(@RequestBody TaskRequest request) {
         try {
-            String userName = request.getUsername(); // 获取用户名
+            String userName = SecurityContextHolder.getContext().getAuthentication().getName(); // 获取用户名
             String y = request.getY(); // 获取 y 值
             String b = request.getB(); // 获取 b 值
             String B1 = request.getB1(); // 待验证公钥
@@ -258,9 +256,18 @@ public class TaskController {
                 if(stuMapper.findSigner(taskId, userName).equals("私钥无效，请重新提交")){
                     applicationMapper.updateApplication(applicationId, "签名失败", userName+"使用非法私钥签名");
                     List<SignTaskUser> STUser = stuMapper.findTaskByTaskId(taskId);
-                    for (SignTaskUser signTaskUser : STUser) {
-                        stuMapper.updateStatus(taskId, signTaskUser.getUserName(), "completed" );
+                    Optional<SignTaskUser> targetUserOptional = STUser.stream()
+                            .filter(user -> user.getUserName().equals(userName))
+                            .findFirst();
+                    if (targetUserOptional.isPresent()) {
+                        stuMapper.updateStatus(taskId, userName, "error");
+                        for (SignTaskUser user : STUser) {
+                            if ("pending".equalsIgnoreCase(user.getStatus())) {
+                                stuMapper.updateStatus(taskId, user.getUserName(), "stop");
+                            }
+                        }
                     }
+                    taskMapper.updateTaskFields(taskId, "fail", y, b);
                     return APIResponse.error(400, "第二次使用非法私钥计算");
                 }
                 stuMapper.updateStatus(taskId, userName, "私钥无效，请重新提交");
@@ -308,7 +315,7 @@ public class TaskController {
         try{
             String d = request.getD(); // 获取 d 值
             int taskId = request.getTaskId(); // 获取任务 ID
-            String userName = request.getUsername(); // 获取用户名
+            String userName = SecurityContextHolder.getContext().getAuthentication().getName(); // 获取用户名
 
             String B1 = request.getB1(); // 待验证公钥
             String B = userMapper.KeyStatus(userName); // 正确的公钥
@@ -319,9 +326,18 @@ public class TaskController {
                 if(ctuMapper.findConfirm(taskId, userName).equals("私钥无效，请重新提交")){
                     applicationMapper.updateApplication(applicationId, "确权失败", userName+"使用非法私钥确权");
                     List<ConfirmTaskUser> CTUser = ctuMapper.findTaskByTaskId(taskId);
-                    for (ConfirmTaskUser confirmTaskUser : CTUser) {
-                        ctuMapper.updateStatus(taskId, confirmTaskUser.getUserName(), "completed" );
+                    Optional<ConfirmTaskUser> targetUserOptional = CTUser.stream()
+                            .filter(user -> user.getUserName().equals(userName))
+                            .findFirst();
+                    if (targetUserOptional.isPresent()) {
+                        ctuMapper.updateStatus(taskId, userName, "error");
+                        for (ConfirmTaskUser user : CTUser) {
+                            if ("pending".equalsIgnoreCase(user.getStatus())) {
+                                ctuMapper.updateStatus(taskId, user.getUserName(), "stop");
+                            }
+                        }
                     }
+                    taskMapper.updateTaskFields(taskId, "fail", task.getY(), task.getB());
                     return APIResponse.error(400, "第二次使用非法私钥计算");
                 }
                 ctuMapper.updateStatus(taskId, userName, "私钥无效，请重新提交");
@@ -357,7 +373,7 @@ public class TaskController {
 
                 applicationMapper.updateApplication(String.valueOf(id), "确权验证失败" ,"");
                 applicationMapper.updateApplication(String.valueOf(task.getSignApplicationId()), "该签名任务确权验证失败" ,"不允许下载该数据");
-                taskMapper.updateTaskFields(taskId, "completed", task.getY(), task.getB());
+                taskMapper.updateTaskFields(taskId, "fail", task.getY(), task.getB());
                 return APIResponse.success("确权验证失败");
             }
         } catch (NumberFormatException e){

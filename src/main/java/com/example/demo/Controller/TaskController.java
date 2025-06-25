@@ -16,6 +16,7 @@ import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/task")
@@ -226,6 +227,9 @@ public class TaskController {
                 handles.add(handle);
 //                System.out.println(handle);
             }
+            handles = handles.stream()
+                    .filter(app -> "in_progress".equalsIgnoreCase(app.getStatus()))
+                    .collect(Collectors.toList());
             handles.sort((a1, a2) -> a2.getCompletedAt().compareTo(a1.getCompletedAt()));
             return APIResponse.success(handles); // 返回成功响应
         } catch (Exception e) {

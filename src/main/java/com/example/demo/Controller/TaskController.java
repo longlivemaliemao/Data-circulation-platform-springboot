@@ -4,6 +4,7 @@ import com.example.demo.Mapper.*;
 import com.example.demo.Model.*;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
@@ -94,6 +95,7 @@ public class TaskController {
      * @return 返回包含操作结果的 APIResponse 对象
      */
     @PostMapping("/create")
+    @PreAuthorize("hasAuthority('数据提供方') OR hasAuthority('审批员')")
     public APIResponse<String> createTask(@RequestBody CreateTaskRequest createTaskRequest) {
         try {
             // 从 CreateTaskRequestDTO 中获取数据并创建 Task 对象
@@ -175,6 +177,7 @@ public class TaskController {
     @GetMapping("/getTask")
     public APIResponse<List<Handle>> getTasksByUserName(@RequestParam String userName) {
         try {
+            userName = SecurityContextHolder.getContext().getAuthentication().getName();
             List<SignTaskUser> signTaskUsers = stuMapper.findTasksByUserName(userName); // 查找任务
             List<ConfirmTaskUser> confirmTaskUsers = ctuMapper.findTasksByUserName(userName);
             List<ArbitrationTaskUser> arbitrationTaskUsers = atuMapper.findInProgressTasksByUserName(userName);
@@ -406,6 +409,7 @@ public class TaskController {
             // 获取任务相关的参数
             BigInteger x = new BigInteger(task.getX());
             String userName = request.getUsername();
+            userName = SecurityContextHolder.getContext().getAuthentication().getName();
 
             // 查找当前用户的仲裁编号
             int currentArbitrationNumber = atuMapper.findArbitrationNumber(taskId, userName);

@@ -93,6 +93,7 @@ public class ApplicationController {
     @GetMapping("/user/{username}")
     public APIResponse<List<Application>> getApplicationsByUsername(@PathVariable String username) {
         try {
+            username = SecurityContextHolder.getContext().getAuthentication().getName();
             List<Application> applications = applicationMapper.findApplicationsByUsername(username);
             applications.sort((a1, a2) -> a2.getApplicationTime().compareTo(a1.getApplicationTime()));
             return APIResponse.success(applications);
@@ -156,6 +157,7 @@ public class ApplicationController {
     @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<Application>> getPending1Applications(@RequestParam("username") String username) {
         try {
+            username = SecurityContextHolder.getContext().getAuthentication().getName();
             List<Application> pendingApplications = applicationMapper.findApplicationsWaiting1(username);
             if (pendingApplications != null && !pendingApplications.isEmpty()) {
                 return APIResponse.success(pendingApplications);

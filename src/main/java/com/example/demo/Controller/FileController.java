@@ -46,6 +46,7 @@ public class FileController {
     @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<String>> getFileNamesByCreatorName(@RequestParam("creatorName") String creatorName) {
         try {
+            creatorName = SecurityContextHolder.getContext().getAuthentication().getName();
             List<String> fileNames = fileMapper.findFileByCreatorName(creatorName);
             return APIResponse.success(fileNames);
         } catch (Exception e) {
@@ -58,6 +59,7 @@ public class FileController {
     @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<File>> getFilesByCreatorName(@RequestParam("creatorName") String creatorName) {
         try {
+            creatorName = SecurityContextHolder.getContext().getAuthentication().getName();
             List<File> fileNames = fileMapper.findFilesByCreatorName(creatorName);
             return APIResponse.success(fileNames);
         } catch (Exception e) {
@@ -87,6 +89,7 @@ public class FileController {
             @RequestParam("fileOutline") String fileOutline,
             HttpSession session) {
         try {
+            creatorName = SecurityContextHolder.getContext().getAuthentication().getName();
             List<String> FileNames = fileMapper.findFileByCreatorName(creatorName);
             if (FileNames.contains(fileName)) {
                 return APIResponse.error(500, "文件名已被使用");

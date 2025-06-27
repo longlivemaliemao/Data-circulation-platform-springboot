@@ -154,6 +154,7 @@ public class FileController {
                 }
 
                 // 设置响应内容类型和文件名
+                response.setCharacterEncoding("UTF-8");
                 response.setContentType("text/csv");
                 response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + ".csv\"");
 

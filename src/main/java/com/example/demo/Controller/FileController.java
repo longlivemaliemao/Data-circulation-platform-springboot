@@ -150,7 +150,7 @@ public class FileController {
                 Date authEndTime = applicationMapper.findAuthEndTime(username,fileName,applicationId);
                 Date now = new Date();
                 if (authEndTime == null || now.after(authEndTime)) {
-                    throw new FileNotFoundException("File not found");
+                    throw new FileNotFoundException("授权期限已过，禁止下载文件");
                 }
 
                 // 设置响应内容类型和文件名

@@ -231,7 +231,7 @@ public class TaskController {
 //                System.out.println(handle);
             }
             handles = handles.stream()
-                    .filter(app -> "in_progress".equalsIgnoreCase(app.getStatus()))
+                    .filter(app -> "in_progress".equalsIgnoreCase(app.getStatus()) || "私钥无效，请重新提交".equalsIgnoreCase(app.getStatus()))
                     .collect(Collectors.toList());
             handles.sort((a1, a2) -> a2.getCompletedAt().compareTo(a1.getCompletedAt()));
             return APIResponse.success(handles); // 返回成功响应

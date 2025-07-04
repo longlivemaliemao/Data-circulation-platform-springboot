@@ -98,6 +98,7 @@ public class ApiSignatureFilter extends OncePerRequestFilter {
             }
 
             logger.info("签名和时间戳验证成功！");
+            logger.info("原始数据: {}, 解密后数据: {}", originalDataJson, decryptedPayload);
 
             // 9. 创建新请求，去除 sign 和 timestamp 后放行
             topLevelPayloadNode.remove("timestamp");

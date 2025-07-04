@@ -806,41 +806,58 @@ public class TaskController {
      *
      * @return APIResponse 包装的 DataRequset 列表
      */
+//    @GetMapping("/getCompletedData")
+//    public APIResponse<List<DataRequset>> getCompletedData() {
+//        try {
+//            // 查询状态为 "completed" 的任务
+//            List<Task> tasks = taskMapper.findCompletedDataTasks();
+//            List<DataRequset> dataRequsetList = new ArrayList<>();
+//            // 遍历每个任务，组装 DataRequset 对象
+//            for (Task task : tasks) {
+//                DataRequset data = new DataRequset();
+//
+//                // 根据文件名查询文件信息
+//                File file = fileMapper.findFileByFileName(task.getFileName());
+////                System.out.println(file);
+//                // 如果文件不存在，跳过当前任务
+//                if (file == null) {
+//                    System.err.println("File not found for fileId: " + task.getFileName());
+//                    continue;
+//                }
+//
+//                // 设置 DataRequset 对象的属性
+//                data.setTaskId(task.getTaskId());
+//                data.setTime(task.getCreatedAt());
+//                data.setB(task.getB());
+//                data.setY(task.getY());
+//                data.setFileName(task.getFileName());
+//                data.setDataId(file.getFileId());
+//                data.setCreator(file.getCreatorName());
+//                data.setOutline(file.getFileOutline());
+//                data.setUsagePolicy(task.getUsagePolicy());
+//
+//                dataRequsetList.add(data);
+//            }
+//
+//            // 返回成功响应
+//            return APIResponse.success(dataRequsetList);
+//        } catch (Exception e) {
+//            // 打印异常日志并返回错误响应
+//            e.printStackTrace();
+//            return APIResponse.error(400, "获取完成流转的数据失败: " + e.getMessage());
+//        }
+//    }
     @GetMapping("/getCompletedData")
-    public APIResponse<List<DataRequset>> getCompletedData() {
+    public APIResponse<List<DataRequset>> getCompletedData(GetCompletedDataDTO getCompletedDataDTO) {
         try {
-            // 查询状态为 "completed" 的任务
-            List<Task> tasks = taskMapper.findCompletedDataTasks();
-            List<DataRequset> dataRequsetList = new ArrayList<>();
-            // 遍历每个任务，组装 DataRequset 对象
-            for (Task task : tasks) {
-                DataRequset data = new DataRequset();
-
-                // 根据文件名查询文件信息
-                File file = fileMapper.findFileByFileName(task.getFileName());
-//                System.out.println(file);
-                // 如果文件不存在，跳过当前任务
-                if (file == null) {
-                    System.err.println("File not found for fileId: " + task.getFileName());
-                    continue;
-                }
-
-                // 设置 DataRequset 对象的属性
-                data.setTaskId(task.getTaskId());
-                data.setTime(task.getCreatedAt());
-                data.setB(task.getB());
-                data.setY(task.getY());
-                data.setFileName(task.getFileName());
-                data.setDataId(file.getFileId());
-                data.setCreator(file.getCreatorName());
-                data.setOutline(file.getFileOutline());
-                data.setUsagePolicy(task.getUsagePolicy());
-
-                dataRequsetList.add(data);
-            }
-
             // 返回成功响应
-            return APIResponse.success(dataRequsetList);
+            return APIResponse.success(taskMapper.selectCompletedDataTasks(
+                    getCompletedDataDTO.getTaskId(),
+                    getCompletedDataDTO.getFileName(),
+                    getCompletedDataDTO.getCreatorName(),
+                    getCompletedDataDTO.getBegin(),
+                    getCompletedDataDTO.getEnd())
+            );
         } catch (Exception e) {
             // 打印异常日志并返回错误响应
             e.printStackTrace();

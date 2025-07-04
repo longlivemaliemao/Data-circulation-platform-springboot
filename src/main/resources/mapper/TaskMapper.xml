@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.Mapper.TaskMapper">
+
+    <!-- 显式映射查询结果到 DataRequset 类 -->
+    <resultMap id="dataRequestResultMap" type="com.example.demo.Model.DataRequset">
+        <result property="taskId" column="task_id"/>
+        <result property="dataId" column="file_id" />
+        <result property="fileName" column="file_name"/>
+        <result property="time" column="created_at"/>
+        <result property="b" column="b"/>
+        <result property="y" column="y"/>
+        <result property="usagePolicy" column="usagepolicy"/>
+        <result property="creator" column="creator_name"/>
+        <result property="outline" column="file_outline"/>
+    </resultMap>
+
+    <select id="selectCompletedDataTasks" resultMap="dataRequestResultMap">
+        select t.task_id, t.created_at , t.file_name ,t.y, t.b, t.usagepolicy, f.creator_name, f.file_id, f.FILE_OUTLINE
+        from task t
+                 left join files f on t.file_name = f.file_name
+        <where>
+            t.status = 'completed'
+          and t.task_type = '签名'
+        <if test = "taskId != null and taskId != ''">
+            and t.task_id = #{taskId}
+        </if>
+        <if test = "fileName != null and fileName != ''">
+            and t.file_name like '%' || #{fileName} || '%'
+        </if>
+        <if test = "creatorName != null and creatorName != ''">
+            and f.creator_name like '%' || #{creatorName} || '%'
+        </if>
+        <if test = "begin != null and end != null">
+            and t.created_at between #{begin} and #{end}
+        </if>
+        </where>
+        order by t.created_at desc
+    </select>
+
+</mapper>

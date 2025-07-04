@@ -1,14 +1,13 @@
 package com.example.demo.Mapper;
 
-import com.example.demo.Model.SignTaskUser;
+import com.example.demo.Model.DataRequset;
 import com.example.demo.Model.Task;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.SelectKey;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
+import java.sql.Timestamp;
 import java.util.List;
 
+@Mapper
 public interface TaskMapper {
 
     @SelectKey(statement = "SELECT TASK_SEQ.NEXTVAL FROM DUAL", keyProperty = "taskId", before = true, resultType = Integer.class)
@@ -39,6 +38,8 @@ public interface TaskMapper {
     // 根据状态和任务类型查询所有状态为 completed 且任务类型为签名的任务
     @Select("SELECT * FROM task WHERE status = 'completed' AND task_type = '签名'")
     List<Task> findCompletedDataTasks();
+
+    List<DataRequset> selectCompletedDataTasks(int taskId, String fileName, String creatorName, Timestamp begin, Timestamp end);
 
     @Select("SELECT task_id FROM task WHERE status = 'completed' AND task_type = '签名'")
     List<Integer> findCompletedDataTaskIDs();

@@ -2,6 +2,7 @@ package com.example.demo.Mapper;
 
 import com.example.demo.Model.ArbitrationTaskUser;
 import com.example.demo.Model.ConfirmTaskUser;
+import com.example.demo.Model.ProcessStatusVO;
 import com.example.demo.Model.Task;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
@@ -63,5 +64,9 @@ public interface ATUMapper {
     // 所有的 s 字段都不是空字符串
     @Select("SELECT COUNT(*) FROM ARBITRATION_USER WHERE task_id = #{taskId} AND s IS NULL")
     int countEmptySByTaskId(int taskId);
+
+    @Select("SELECT a.user_name, a.status, u.role, a.arbitration_number as sort FROM ARBITRATION_USER a join users u" +
+            " on a.user_name = u.username WHERE task_id = #{taskId}")
+    List<ProcessStatusVO> findUsersByTaskId(int taskId);
 
 }

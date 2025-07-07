@@ -1,5 +1,6 @@
 package com.example.demo.Mapper;
 
+import com.example.demo.Model.ProcessStatusVO;
 import com.example.demo.Model.SignTaskUser;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
@@ -43,6 +44,10 @@ public interface STUMapper {
     // 根据 taskId 和 username 查找用户
     @Select("SELECT status FROM SIGNTASK_USER WHERE task_id = #{taskId} AND user_name = #{username}")
     String findSigner(int taskId, String username);
+
+    @Select("SELECT s.user_name, s.status, u.role, s.signer_number as sort FROM signtask_user s join users u" +
+            " on s.user_name = u.username WHERE task_id = #{taskId}")
+    List<ProcessStatusVO> findUsersByTaskId(int taskId);
 
 }
 

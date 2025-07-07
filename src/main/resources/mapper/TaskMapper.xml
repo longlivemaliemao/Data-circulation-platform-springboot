@@ -18,7 +18,7 @@
     <select id="selectCompletedDataTasks" resultMap="dataRequestResultMap">
         select t.task_id, t.created_at , t.file_name ,t.y, t.b, t.usagepolicy, f.creator_name, f.file_id, f.FILE_OUTLINE
         from task t
-                 left join files f on t.file_name = f.file_name
+                join files f on t.file_name = f.file_name
         <where>
             t.status = 'completed'
           and t.task_type = '签名'

@@ -1,6 +1,7 @@
 package com.example.demo.Mapper;
 
 import com.example.demo.Model.ConfirmTaskUser;
+import com.example.demo.Model.ProcessStatusVO;
 import com.example.demo.Model.SignTaskUser;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
@@ -49,5 +50,8 @@ public interface CTUMapper {
     @Update("UPDATE CONFIRM_USER SET status = #{status} WHERE task_id = #{taskId} AND user_name = #{userName}")
     void updateStatus(int taskId, String userName, String status);
 
+    @Select("SELECT c.user_name, c.status, u.role, c.confirm_number as sort FROM CONFIRM_USER c join users u" +
+            " on c.user_name = u.username WHERE task_id = #{taskId}")
+    List<ProcessStatusVO> findUsersByTaskId(int taskId);
 
 }

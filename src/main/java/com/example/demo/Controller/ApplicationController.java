@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/application")
@@ -170,7 +171,7 @@ public class ApplicationController {
     }
 
     @PostMapping("/getProcessStatus")
-    public APIResponse<List<Map<String, Object>>> getProcessStatus(@RequestBody Map<String, Object> requestData) {
+    public APIResponse<List<ProcessStatusVO>> getProcessStatus(@RequestBody Map<String, Object> requestData) {
         try {
             String username = SecurityContextHolder.getContext().getAuthentication().getName();
             int applicationId = (int) requestData.get("id");
@@ -184,55 +185,29 @@ public class ApplicationController {
             }
 
             int taskId = taskMapper.findTaskIdByApplicationId(applicationId);
-            List<Map<String, Object>> processStatus = new ArrayList<>();
-            List<String> userLists = new ArrayList<>();
+            List<String> userLists;
+            List<ProcessStatusVO> processStatusList;
 
             if ("签名".equals(applicationType)) {
-                List<SignTaskUser> signTaskUsers = stuMapper.findTaskByTaskId(taskId);
-                for (SignTaskUser signTaskUser : signTaskUsers) {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("username", signTaskUser.getUserName());
-                    map.put("status", signTaskUser.getStatus());
-                    map.put("role",userMapper.findByUsername(signTaskUser.getUserName()).getRole());
-                    map.put("order",signTaskUser.getSignerNumber());
-                    processStatus.add(map);
-                    userLists.add(signTaskUser.getUserName());
-                }
-
+                processStatusList = stuMapper.findUsersByTaskId(taskId);
             } else if ("确权".equals(applicationType)) {
-                List<ConfirmTaskUser> confirmTaskUsers = ctuMapper.findTaskByTaskId(taskId);
-                for (ConfirmTaskUser confirmTaskUser : confirmTaskUsers) {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("username", confirmTaskUser.getUserName());
-                    map.put("status", confirmTaskUser.getStatus());
-                    map.put("role",userMapper.findByUsername(confirmTaskUser.getUserName()).getRole());
-                    map.put("order",confirmTaskUser.getConfirmNumber());
-                    processStatus.add(map);
-                    userLists.add(confirmTaskUser.getUserName());
-                }
+                processStatusList = ctuMapper.findUsersByTaskId(taskId);
 
             } else if ("仲裁".equals(applicationType)) {
-                List<ArbitrationTaskUser> arbitrationTaskUsers = atuMapper.findAll(taskId);
-                for (ArbitrationTaskUser arbitrationTaskUser : arbitrationTaskUsers) {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("username", arbitrationTaskUser.getUserName());
-                    map.put("status", arbitrationTaskUser.getStatus());
-                    map.put("role",userMapper.findByUsername(arbitrationTaskUser.getUserName()).getRole());
-                    map.put("order",arbitrationTaskUser.getArbitrationNumber());
-                    processStatus.add(map);
-                    userLists.add(arbitrationTaskUser.getUserName());
-                }
+                processStatusList = atuMapper.findUsersByTaskId(taskId);
 
             } else {
                 return APIResponse.error(400, "不支持的申请类型：" + applicationType);
             }
+            userLists = processStatusList.stream()
+                    .map(ProcessStatusVO::getUsername)
+                    .collect(Collectors.toList());
 
-            // 当前用户不在任务用户列表中，无权限查看
-            if (!userLists.isEmpty() && !userLists.contains(username)) {
+            if (!userLists.contains(username)) {
                 return APIResponse.error(403, "当前用户无权限查看该流程状态");
             }
 
-            return APIResponse.success(processStatus);
+            return APIResponse.success(processStatusList);
 
         } catch (Exception e) {
             return APIResponse.error(500, "系统内部错误: " + e.getMessage());

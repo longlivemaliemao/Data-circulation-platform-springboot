@@ -231,7 +231,7 @@ public class TaskController {
 //                System.out.println(handle);
             }
             handles = handles.stream()
-                    .filter(app -> "in_progress".equalsIgnoreCase(app.getStatus()) || "私钥无效，请重新提交".equalsIgnoreCase(app.getStatus()))
+                    .filter(app -> "in_progress".equalsIgnoreCase(app.getStatus()) || "invalid_private_key".equalsIgnoreCase(app.getStatus()))
                     .collect(Collectors.toList());
             handles.sort((a1, a2) -> a2.getCompletedAt().compareTo(a1.getCompletedAt()));
             return APIResponse.success(handles); // 返回成功响应
@@ -260,7 +260,7 @@ public class TaskController {
             Task task = taskMapper.findTaskById(taskId);
             String applicationId = String.valueOf(task.getApplicationId());
             if(!B1.equals(B)){
-                if(stuMapper.findSigner(taskId, userName).equals("私钥无效，请重新提交")){
+                if(stuMapper.findSigner(taskId, userName).equals("invalid_private_key")){
                     applicationMapper.updateApplication(applicationId, "签名失败", userName+"使用非法私钥签名");
                     List<SignTaskUser> STUser = stuMapper.findTaskByTaskId(taskId);
                     Optional<SignTaskUser> targetUserOptional = STUser.stream()
@@ -277,7 +277,7 @@ public class TaskController {
                     taskMapper.updateTaskFields(taskId, "fail", y, b);
                     return APIResponse.error(400, "第二次使用非法私钥计算");
                 }
-                stuMapper.updateStatus(taskId, userName, "私钥无效，请重新提交");
+                stuMapper.updateStatus(taskId, userName, "invalid_private_key");
                 return APIResponse.error(400, "第一次使用非法私钥计算");
             }
 
@@ -330,7 +330,7 @@ public class TaskController {
             Task task = taskMapper.findTaskById(taskId);
             String applicationId = String.valueOf(task.getApplicationId());
             if(!B1.equals(B)){
-                if(ctuMapper.findConfirm(taskId, userName).equals("私钥无效，请重新提交")){
+                if(ctuMapper.findConfirm(taskId, userName).equals("invalid_private_key")){
                     applicationMapper.updateApplication(applicationId, "确权失败", userName+"使用非法私钥确权");
                     List<ConfirmTaskUser> CTUser = ctuMapper.findTaskByTaskId(taskId);
                     Optional<ConfirmTaskUser> targetUserOptional = CTUser.stream()
@@ -347,7 +347,7 @@ public class TaskController {
                     taskMapper.updateTaskFields(taskId, "fail", task.getY(), task.getB());
                     return APIResponse.error(400, "第二次使用非法私钥计算");
                 }
-                ctuMapper.updateStatus(taskId, userName, "私钥无效，请重新提交");
+                ctuMapper.updateStatus(taskId, userName, "invalid_private_key");
                 return APIResponse.error(400, "第一次使用非法私钥计算");
             }
 

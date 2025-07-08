@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -132,6 +133,7 @@ public class AdminController {
     }
 
     @PostMapping("/update-mpi")
+    @Transactional(rollbackFor = Exception.class)
     public APIResponse<String> updateMPI(@RequestBody Map<String, Object> requestBody, HttpSession session) {
         try {
             // 获取当前登录用户的 ID

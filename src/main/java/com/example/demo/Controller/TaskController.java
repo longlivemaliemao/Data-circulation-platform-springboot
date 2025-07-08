@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +97,7 @@ public class TaskController {
      */
     @PostMapping("/create")
     @PreAuthorize("hasAuthority('数据提供方') OR hasAuthority('审批员')")
+    @Transactional(rollbackFor = Exception.class)
     public APIResponse<String> createTask(@RequestBody CreateTaskRequest createTaskRequest) {
         try {
             // 从 CreateTaskRequestDTO 中获取数据并创建 Task 对象
@@ -247,6 +249,7 @@ public class TaskController {
      * @return 返回包含操作结果的 APIResponse 对象
      */
     @PostMapping("/signUpdate")
+    @Transactional(rollbackFor = Exception.class)
     public APIResponse<String> signUpdateTask(@RequestBody TaskRequest request) {
         try {
             String userName = SecurityContextHolder.getContext().getAuthentication().getName(); // 获取用户名
@@ -318,6 +321,7 @@ public class TaskController {
      * @return 返回包含操作结果的 APIResponse 对象
      */
     @PostMapping("/confirmUpdate")
+    @Transactional(rollbackFor = Exception.class)
     public APIResponse<String> confirmUpdateTask(@RequestBody TaskRequest request) {
         try{
             String d = request.getD(); // 获取 d 值
@@ -399,6 +403,7 @@ public class TaskController {
      * @return 返回包含操作结果的 APIResponse 对象
      */
     @PostMapping("/arbitrationUpdate")
+    @Transactional(rollbackFor = Exception.class)
     public APIResponse<String> arbitrationUpdateTask(@RequestBody TaskRequest request) {
         try {
             // 从请求中获取相关参数

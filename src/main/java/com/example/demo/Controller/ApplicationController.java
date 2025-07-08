@@ -5,6 +5,7 @@ import com.example.demo.Model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -110,6 +111,7 @@ public class ApplicationController {
      */
     @PostMapping("/update")
     @PreAuthorize("hasAuthority('审批员') OR hasAuthority('数据提供方')")
+    @Transactional(rollbackFor = Exception.class)
     public APIResponse<String> updateApplication(@RequestBody Map<String, String> requestData) {
         try {
 

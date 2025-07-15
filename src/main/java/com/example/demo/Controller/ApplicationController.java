@@ -8,7 +8,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -25,8 +28,6 @@ public class ApplicationController {
     private CTUMapper ctuMapper;
     @Autowired
     private ATUMapper atuMapper;
-    @Autowired
-    private UserMapper userMapper;
 
     /**
      * 插入新的申请记录到数据库
@@ -62,6 +63,7 @@ public class ApplicationController {
             // 设置 applicationTime 为当前系统时间
             application.setApplicationTime(new Date());
             application.setFileName("");
+            application.setUsername(SecurityContextHolder.getContext().getAuthentication().getName());
             if(!Objects.equals(application.getApplicationType(), "签名")){
                 String taskId = application.getText();
                 Task task = taskMapper.findTaskById(Integer.parseInt(taskId));

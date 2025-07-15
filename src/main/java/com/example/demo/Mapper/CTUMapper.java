@@ -2,7 +2,6 @@ package com.example.demo.Mapper;
 
 import com.example.demo.Model.ConfirmTaskUser;
 import com.example.demo.Model.ProcessStatusVO;
-import com.example.demo.Model.SignTaskUser;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;

@@ -2,7 +2,10 @@ package com.example.demo.Mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.demo.Model.Application;
-import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.Date;
 import java.util.List;

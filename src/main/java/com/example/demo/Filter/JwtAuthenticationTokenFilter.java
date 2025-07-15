@@ -1,7 +1,7 @@
 package com.example.demo.Filter;
 
-import com.example.demo.Model.User;
 import com.example.demo.Mapper.UserMapper;
+import com.example.demo.Model.User;
 import com.example.demo.Util.JwtTokenUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

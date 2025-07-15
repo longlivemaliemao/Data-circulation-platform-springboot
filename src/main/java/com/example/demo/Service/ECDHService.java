@@ -1,21 +1,19 @@
 package com.example.demo.Service;
 
 import com.example.demo.Mapper.UserMapper;
-import com.example.demo.Model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.*;
-import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
 import java.util.Base64;
-import java.util.Optional;
 
 @Service
 public class ECDHService {

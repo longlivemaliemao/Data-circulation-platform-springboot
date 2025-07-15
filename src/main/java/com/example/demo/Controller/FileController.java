@@ -3,30 +3,32 @@ package com.example.demo.Controller;
 import com.example.demo.Mapper.ApplicationMapper;
 import com.example.demo.Mapper.FileMapper;
 import com.example.demo.Model.APIResponse;
-import com.example.demo.Model.Application;
 import com.example.demo.Model.File;
-import com.example.demo.Model.Handle;
 import com.example.demo.Service.ECDHService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.*;
-
-import java.nio.file.*;
-
-
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 public class FileController {

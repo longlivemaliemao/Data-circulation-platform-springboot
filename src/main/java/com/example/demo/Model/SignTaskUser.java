@@ -1,7 +1,6 @@
 package com.example.demo.Model;
-import com.baomidou.mybatisplus.annotation.TableId;
+
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
 
 @TableName("SIGNTASK_USER")
 public class SignTaskUser {

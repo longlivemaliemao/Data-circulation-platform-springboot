@@ -2,10 +2,10 @@ package com.example.demo.Controller;
 
 import com.example.demo.Mapper.UserMapper;
 import com.example.demo.Model.APIResponse;
-import com.example.demo.Util.JwtTokenUtil;
 import com.example.demo.Model.User;
 import com.example.demo.Service.CustomUserDetailsService;
 import com.example.demo.Service.ECDHService;
+import com.example.demo.Util.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpSession;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -159,14 +162,13 @@ public class AdminController {
             boolean questionIsBlank = securityQuestion == null || securityQuestion.trim().isEmpty();
             boolean answerIsBlank = securityAnswer == null || securityAnswer.trim().isEmpty();
 
+            if (questionIsBlank ^ answerIsBlank) {
+                return APIResponse.error(400, "密保问题和答案必须同时提供或同时不提供");
+            }
+
             if (!questionIsBlank && !answerIsBlank) {
                 // 问题和答案都不为空，执行更新
                 userMapper.update2(securityQuestion, securityAnswer, id);
-            } else if (questionIsBlank && answerIsBlank) {
-                // 问题和答案都为空，继续执行后续代码
-            } else {
-                // 其中一个为空，另一个不为空，返回 400 错误
-                return APIResponse.error(400, "密保问题和答案必须同时提供或同时不提供");
             }
 
             // 更新密码

@@ -24,6 +24,7 @@ import java.nio.file.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -89,11 +90,10 @@ public class FileController {
             @RequestParam("fileOutline") String fileOutline,
             HttpSession session) {
         try {
+            // 合法化处理文件名和 fileId，防止路径穿越
+            fileId = Paths.get(fileId).getFileName().toString();
+            fileName = Paths.get(fileName).getFileName().toString();
             creatorName = SecurityContextHolder.getContext().getAuthentication().getName();
-            List<String> FileNames = fileMapper.findFileByCreatorName(creatorName);
-            if (FileNames.contains(fileName)) {
-                return APIResponse.error(500, "文件名已被使用");
-            }
             byte[] sharedSecret = (byte[]) session.getAttribute("sharedSecret");
             if (sharedSecret == null) {
                 return APIResponse.error(500, "共享密钥不存在于会话中");
@@ -104,11 +104,20 @@ public class FileController {
             saveChunk(decryptedDataBytes, chunkIndex, fileId);
 
             if (chunkIndex == 0) {
-                boolean inserted = insertFile(fileId, fileName, creatorName, fileOutline, totalChunks, 1);
+                List<String> FileNames = fileMapper.findFileByCreatorName(creatorName);
+                if (FileNames.contains(fileName)) {
+                    return APIResponse.error(500, "文件名已被使用");
+                }
+                boolean inserted = insertFile(fileId, fileName, creatorName, fileOutline, totalChunks, chunkIndex);
                 if (!inserted) {
                     return APIResponse.error(500, "插入数据库失败");
                 }
             } else {
+                Map<String, String> c = fileMapper.selectChunksByFileName(creatorName, fileName);
+                if (c.get("UPLOADED_CHUNKS").equals(c.get("TOTAL_CHUNKS"))) {
+                    deleteChunks(totalChunks, fileId);
+                    return APIResponse.error(500, "禁止上传分片");
+                }
                 fileMapper.updateChunksByFileID(chunkIndex + 1, fileId);
             }
 
@@ -117,6 +126,7 @@ public class FileController {
                     mergeChunks(totalChunks, fileId, fileName);
                     return APIResponse.success("所有块上传并合并成功");
                 } else {
+                    deleteChunks(totalChunks, fileId);
                     return APIResponse.error(500, "数据块缺失");
                 }
             }

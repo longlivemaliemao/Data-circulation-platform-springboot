@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface FileMapper extends BaseMapper<File> {
@@ -39,5 +40,8 @@ public interface FileMapper extends BaseMapper<File> {
 
     @Update("UPDATE files SET UPLOADED_CHUNKS = #{uploadedChunks} WHERE file_id = #{fileId}")
     void updateChunksByFileID(int uploadedChunks, String fileId);
+
+    @Select("select UPLOADED_CHUNKS, TOTAL_CHUNKS from FILES where CREATOR_NAME = #{creator_name} AND FILE_NAME = #{fileName}")
+    Map<String, String> selectChunksByFileName(String creator_name, String fileName);
 
 }

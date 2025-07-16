@@ -103,29 +103,39 @@ public class FileController {
 
             byte[] encryptedChunkBytes = chunk.getBytes();
             byte[] decryptedDataBytes = ecdhService.decryptFile(encryptedChunkBytes, sharedSecret);
-            saveChunk(decryptedDataBytes, chunkIndex, fileId);
 
+            // 在保存分片前，先进行数据库检查
             if (chunkIndex == 0) {
-                List<String> FileNames = fileMapper.findFileByCreatorName(creatorName);
-                if (FileNames.contains(fileName)) {
+                // 对于第一个分片，检查文件名是否已存在
+                List<String> fileNames = fileMapper.findFileByCreatorName(creatorName);
+                if (fileNames.contains(fileName)) {
                     return APIResponse.error(500, "文件名已被使用");
                 }
+                // 插入文件元数据
                 boolean inserted = insertFile(fileId, fileName, creatorName, fileOutline, totalChunks, chunkIndex);
                 if (!inserted) {
                     return APIResponse.error(500, "插入数据库失败");
                 }
             } else {
+                // 对于后续分片，快速检查数据库中文件状态
                 Map<String, String> c = fileMapper.selectChunksByFileName(creatorName, fileName);
-                if (c.get("UPLOADED_CHUNKS").equals(c.get("TOTAL_CHUNKS"))) {
-                    deleteChunks(totalChunks, fileId);
-                    return APIResponse.error(500, "禁止上传分片");
+                // 如果文件记录不存在（首个分片未成功），或文件已标记为完成，则拒绝
+                if (c == null || c.get("UPLOADED_CHUNKS").equals(c.get("TOTAL_CHUNKS"))) {
+                    deleteChunks(totalChunks, fileId); // 清理可能已保存的无效分片
+                    return APIResponse.error(500, "禁止上传分片：文件不存在或已完成");
                 }
-                fileMapper.updateChunksByFileID(chunkIndex + 1, fileId);
+                // 注意：此处我们只读不写，避免了频繁更新数据库的性能开销
             }
 
+            // 保存分片到磁盘
+            saveChunk(decryptedDataBytes, chunkIndex, fileId);
+
+            // 当最后一个分片上传时，执行合并操作并更新数据库
             if (chunkIndex + 1 == totalChunks) {
                 if (areAllChunksPresent(totalChunks, fileId)) {
                     mergeChunks(totalChunks, fileId, fileName);
+                    // 合并成功后，一次性将数据库中的 UPLOADED_CHUNKS 更新为 totalChunks
+                    fileMapper.updateChunksByFileID(totalChunks, fileId);
                     return APIResponse.success("所有块上传并合并成功");
                 } else {
                     deleteChunks(totalChunks, fileId);
@@ -133,6 +143,7 @@ public class FileController {
                 }
             }
 
+            // 对于中间的分片，直接返回成功，不更新数据库
             return APIResponse.success("Chunk " + (chunkIndex + 1) + " 上传并解密成功");
         } catch (Exception e) {
             e.printStackTrace();

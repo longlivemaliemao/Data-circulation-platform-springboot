@@ -44,6 +44,9 @@ public class ApplicationController {
                     return APIResponse.error(400,"未找到该数据流转任务ID");
                 }
             }
+            if (SecurityContextHolder.getContext().getAuthentication().getName().equals(application.getDataUser())) {
+                return APIResponse.error(400,"不允许向自己申请数据");
+            }
             if(Objects.equals(application.getApplicationType(), "仲裁")){
                 boolean ok = false;
                 String taskId = application.getText();

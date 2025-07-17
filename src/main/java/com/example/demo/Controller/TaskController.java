@@ -2,11 +2,11 @@ package com.example.demo.Controller;
 
 import com.example.demo.Mapper.*;
 import com.example.demo.Model.*;
+import com.example.demo.Util.UserContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -181,7 +181,7 @@ public class TaskController {
     @GetMapping("/getTask")
     public APIResponse<List<Handle>> getTasksByUserName(@RequestParam String userName) {
         try {
-            userName = SecurityContextHolder.getContext().getAuthentication().getName();
+            userName = UserContext.getUsername();
             List<SignTaskUser> signTaskUsers = stuMapper.findTasksByUserName(userName); // 查找任务
             List<ConfirmTaskUser> confirmTaskUsers = ctuMapper.findTasksByUserName(userName);
             List<ArbitrationTaskUser> arbitrationTaskUsers = atuMapper.findInProgressTasksByUserName(userName);
@@ -254,7 +254,7 @@ public class TaskController {
     @Transactional(rollbackFor = Exception.class)
     public APIResponse<String> signUpdateTask(@RequestBody TaskRequest request) {
         try {
-            String userName = SecurityContextHolder.getContext().getAuthentication().getName(); // 获取用户名
+            String userName = UserContext.getUsername(); // 获取用户名
             String y = request.getY(); // 获取 y 值
             String b = request.getB(); // 获取 b 值
             String B1 = request.getB1(); // 待验证公钥
@@ -328,7 +328,7 @@ public class TaskController {
         try{
             String d = request.getD(); // 获取 d 值
             int taskId = request.getTaskId(); // 获取任务 ID
-            String userName = SecurityContextHolder.getContext().getAuthentication().getName(); // 获取用户名
+            String userName = UserContext.getUsername(); // 获取用户名
 
             String B1 = request.getB1(); // 待验证公钥
             String B = userMapper.KeyStatus(userName); // 正确的公钥
@@ -416,7 +416,7 @@ public class TaskController {
             // 获取任务相关的参数
             BigInteger x = new BigInteger(task.getX());
             String userName = request.getUsername();
-            userName = SecurityContextHolder.getContext().getAuthentication().getName();
+            userName = UserContext.getUsername();
 
             // 查找当前用户的仲裁编号
             int currentArbitrationNumber = atuMapper.findArbitrationNumber(taskId, userName);

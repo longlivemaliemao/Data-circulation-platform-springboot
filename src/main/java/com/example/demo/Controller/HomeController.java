@@ -3,8 +3,8 @@ package com.example.demo.Controller;
 import com.example.demo.Mapper.UserMapper;
 import com.example.demo.Model.APIResponse;
 import com.example.demo.Service.ECDHService;
+import com.example.demo.Util.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,7 +43,7 @@ public class HomeController {
     @PostMapping("/key-status")
     public APIResponse<String> keyStatus(@RequestParam String username) {
         try {
-            username = SecurityContextHolder.getContext().getAuthentication().getName();
+            username = UserContext.getUsername();
             String keyStatus = userMapper.KeyStatus(username);
             if(!Objects.equals(keyStatus, null)){
 
@@ -65,7 +65,7 @@ public class HomeController {
             String encryptedPublicKey = (String) requestBody.get("public_key");
             String decryptedPublicKey = dhService.decrypt(encryptedPublicKey, sharedSecret);
             String username =(String) requestBody.get("username");
-            username = SecurityContextHolder.getContext().getAuthentication().getName();
+            username = UserContext.getUsername();
             userMapper.UpdatePublicKey(username, decryptedPublicKey);
             return APIResponse.success("成功插入公钥");
         } catch (Exception e) {

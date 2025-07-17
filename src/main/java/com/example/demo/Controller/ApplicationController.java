@@ -2,9 +2,9 @@ package com.example.demo.Controller;
 
 import com.example.demo.Mapper.*;
 import com.example.demo.Model.*;
+import com.example.demo.Util.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,7 +44,7 @@ public class ApplicationController {
                     return APIResponse.error(400,"未找到该数据流转任务ID");
                 }
             }
-            if (SecurityContextHolder.getContext().getAuthentication().getName().equals(application.getDataUser())) {
+            if (UserContext.getUsername().equals(application.getDataUser())) {
                 return APIResponse.error(400,"不允许向自己申请数据");
             }
             if(Objects.equals(application.getApplicationType(), "仲裁")){
@@ -66,7 +66,7 @@ public class ApplicationController {
             // 设置 applicationTime 为当前系统时间
             application.setApplicationTime(new Date());
             application.setFileName("");
-            application.setUsername(SecurityContextHolder.getContext().getAuthentication().getName());
+            application.setUsername(UserContext.getUsername());
             if(!Objects.equals(application.getApplicationType(), "签名")){
                 String taskId = application.getText();
                 Task task = taskMapper.findTaskById(Integer.parseInt(taskId));
@@ -100,7 +100,7 @@ public class ApplicationController {
     @GetMapping("/user/{username}")
     public APIResponse<List<Application>> getApplicationsByUsername(@PathVariable String username) {
         try {
-            username = SecurityContextHolder.getContext().getAuthentication().getName();
+            username = UserContext.getUsername();
             List<Application> applications = applicationMapper.findApplicationsByUsername(username);
             applications.sort((a1, a2) -> a2.getApplicationTime().compareTo(a1.getApplicationTime()));
             return APIResponse.success(applications);
@@ -165,7 +165,7 @@ public class ApplicationController {
     @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<Application>> getPending1Applications(@RequestParam("username") String username) {
         try {
-            username = SecurityContextHolder.getContext().getAuthentication().getName();
+            username = UserContext.getUsername();
             List<Application> pendingApplications = applicationMapper.findApplicationsWaiting1(username);
             if (pendingApplications != null && !pendingApplications.isEmpty()) {
                 return APIResponse.success(pendingApplications);
@@ -180,7 +180,7 @@ public class ApplicationController {
     @PostMapping("/getProcessStatus")
     public APIResponse<List<ProcessStatusVO>> getProcessStatus(@RequestBody Map<String, Object> requestData) {
         try {
-            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            String username = UserContext.getUsername();
             int applicationId = (int) requestData.get("id");
             String applicationType = (String) requestData.get("applicationType");
             String status = applicationMapper.findStatus(applicationId);

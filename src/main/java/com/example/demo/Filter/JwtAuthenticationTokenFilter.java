@@ -3,6 +3,7 @@ package com.example.demo.Filter;
 import com.example.demo.Mapper.UserMapper;
 import com.example.demo.Model.User;
 import com.example.demo.Util.JwtTokenUtil;
+import com.example.demo.Util.UserContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,9 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private UserContext userContext;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -70,6 +74,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
                     new UsernamePasswordAuthenticationToken(username, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
+            UserContext.setUsername(username);
             // 放行请求
             filterChain.doFilter(request, response);
         } catch (Exception e) {
@@ -80,6 +85,9 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\": \"无效的token\"}");
+        }finally {
+            SecurityContextHolder.clearContext();
+            UserContext.clear();
         }
     }
 }

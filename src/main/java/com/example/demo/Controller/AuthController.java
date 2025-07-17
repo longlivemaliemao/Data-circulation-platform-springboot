@@ -6,9 +6,9 @@ import com.example.demo.Model.User;
 import com.example.demo.Service.CustomUserDetailsService;
 import com.example.demo.Service.ECDHService;
 import com.example.demo.Util.JwtTokenUtil;
+import com.example.demo.Util.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -81,7 +81,7 @@ public class AuthController {
             // 提取用户名列表
             List<String> usernames = dataOwners.stream()
                     .map(User::getUsername)
-                    .filter(username -> !username.equals(SecurityContextHolder.getContext().getAuthentication().getName()))
+                    .filter(username -> !username.equals(UserContext.getUsername()))
                     .collect(Collectors.toList());
 
             return APIResponse.success(usernames);

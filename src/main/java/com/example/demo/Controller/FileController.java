@@ -5,23 +5,23 @@ import com.example.demo.Mapper.FileMapper;
 import com.example.demo.Model.APIResponse;
 import com.example.demo.Model.File;
 import com.example.demo.Service.ECDHService;
+import com.example.demo.Util.DownloadTokenUtil;
+import com.example.demo.Util.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.io.FileNotFoundException;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,11 +45,14 @@ public class FileController {
     @Autowired
     private ApplicationMapper applicationMapper;
 
+    @Autowired
+    private UserContext  userContext;
+
     @GetMapping("/filesName")
     @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<String>> getFileNamesByCreatorName(@RequestParam("creatorName") String creatorName) {
         try {
-            creatorName = SecurityContextHolder.getContext().getAuthentication().getName();
+            creatorName = UserContext.getUsername();
             List<String> fileNames = fileMapper.findFileByCreatorName(creatorName);
             return APIResponse.success(fileNames);
         } catch (Exception e) {
@@ -62,7 +65,7 @@ public class FileController {
     @PreAuthorize("hasAuthority('数据提供方')")
     public APIResponse<List<File>> getFilesByCreatorName(@RequestParam("creatorName") String creatorName) {
         try {
-            creatorName = SecurityContextHolder.getContext().getAuthentication().getName();
+            creatorName = UserContext.getUsername();
             List<File> fileNames = fileMapper.findFilesByCreatorName(creatorName);
             return APIResponse.success(fileNames);
         } catch (Exception e) {
@@ -95,7 +98,7 @@ public class FileController {
             // 合法化处理文件名和 fileId，防止路径穿越
             fileId = Paths.get(fileId).getFileName().toString();
             fileName = Paths.get(fileName).getFileName().toString();
-            creatorName = SecurityContextHolder.getContext().getAuthentication().getName();
+            creatorName = UserContext.getUsername();
             byte[] sharedSecret = (byte[]) session.getAttribute("sharedSecret");
             if (sharedSecret == null) {
                 return APIResponse.error(500, "共享密钥不存在于会话中");
@@ -152,51 +155,125 @@ public class FileController {
     }
 
 
-    @GetMapping("/download")
-    public StreamingResponseBody downloadFile(@RequestParam("fileName") String fileName,
-                                              @RequestParam("applicationId")  int applicationId,
-                                              HttpServletResponse response) {
-        return outputStream -> {
-            try {
-                File fileRecord = fileMapper.findFileByFileName(fileName);
-                if (fileRecord == null) {
-                    throw new FileNotFoundException("File not found");
-                }
-
-                String filePath = fileRecord.getFilePath();
-                java.io.File file = new java.io.File(Paths.get(filePath, fileName + ".csv").toString());
-                if (!file.exists()) {
-                    throw new FileNotFoundException("File not found on server");
-                }
-
-                String username = SecurityContextHolder.getContext().getAuthentication().getName();
-                Date authEndTime = applicationMapper.findAuthEndTime(username,fileName,applicationId);
-                Date now = new Date();
-                if (authEndTime == null || now.after(authEndTime)) {
-                    throw new FileNotFoundException("授权期限已过，禁止下载文件");
-                }
-
-                // 设置响应内容类型和文件名
-                response.setCharacterEncoding("UTF-8");
-                response.setContentType("text/csv");
-                response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + ".csv\"");
-
-                try (InputStream inputStream = Files.newInputStream(file.toPath())) {
-                    byte[] buffer = new byte[10 * 1024]; // 10KB buffer
-                    int bytesRead;
-
-                    // 直接将文件内容写入响应输出流
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
-                        outputStream.flush(); // 立即发送数据
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace(); // 打印堆栈跟踪信息
-                throw new IOException("Error processing file download: " + e.getMessage(), e);
+    @GetMapping("/getDownloadSign")
+    public APIResponse<String> getDownloadSign(@RequestParam("fileName") String fileName,
+                                              @RequestParam("applicationId") int applicationId) {
+        try {
+            String username = UserContext.getUsername();
+            File fileRecord = fileMapper.findFileByFileName(fileName);
+            java.io.File file = new java.io.File(fileRecord.getFilePath(), fileName + ".csv");
+            if (!file.exists()) {
+                return APIResponse.error(404, "文件不存在");
             }
-        };
+            Date authEndTime = applicationMapper.findAuthEndTime(username, fileName, applicationId);
+            if (authEndTime == null) {
+                return  APIResponse.error(404, "该数据未被授权下载");
+            }
+            String signedToken = DownloadTokenUtil.generateDownloadToken(fileName, username, applicationId);
+            return APIResponse.success(signedToken);
+        } catch (Exception e) {
+            return APIResponse.error(500, "生成下载链接失败: " + e.getMessage());
+        }
     }
+
+    @GetMapping("/download/{signedToken}")
+    public void downloadFile(@PathVariable String signedToken, HttpServletResponse response) throws IOException {
+        try {
+            DownloadTokenUtil.ParsedToken token = DownloadTokenUtil.validateDownloadToken(signedToken);
+
+            File fileRecord = fileMapper.findFileByFileName(token.fileName);
+            java.io.File file = new java.io.File(fileRecord.getFilePath(), token.fileName + ".csv");
+
+            Date authEndTime = applicationMapper.findAuthEndTime(token.username, token.fileName, token.applicationId);
+            if (new Date().after(authEndTime)) {
+                response.sendError(403, "授权已过期");
+                return;
+            }
+
+            response.reset();
+            response.setContentType("application/octet-stream");
+            response.setCharacterEncoding("utf-8");
+            response.setContentLength((int) file.length());
+            response.setHeader("Content-Disposition", "attachment;filename=" + token.fileName + ".csv");
+
+            try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(file.toPath()));
+                 OutputStream os = response.getOutputStream()) {
+                byte[] buff = new byte[1024];
+                int i;
+                while ((i = bis.read(buff)) != -1) {
+                    os.write(buff, 0, i);
+                }
+            }
+
+        } catch (IllegalArgumentException e) {
+            response.sendError(401, "下载链接无效或已过期");
+        } catch (Exception e) {
+            response.sendError(500, "服务器内部错误: " + e.getMessage());
+        }
+    }
+
+
+    @GetMapping("/download")
+    public void fileDownload(HttpServletResponse response,
+                             @RequestParam("fileName") String fileName,
+                             @RequestParam("applicationId") int applicationId) {
+        try {
+            // 文件名合法化，防止路径穿越
+            fileName = Paths.get(fileName).getFileName().toString();
+
+            // 从数据库获取文件记录
+            File fileRecord = fileMapper.findFileByFileName(fileName);
+            if (fileRecord == null) {
+                response.sendError(HttpStatus.NOT_FOUND.value(), "文件记录不存在");
+                return;
+            }
+
+            String filePath = fileRecord.getFilePath();
+            java.io.File file = new java.io.File(filePath, fileName + ".csv");
+
+            if (!file.exists()) {
+                response.sendError(HttpStatus.NOT_FOUND.value(), "文件未找到");
+                return;
+            }
+
+            String username = UserContext.getUsername();
+            Date authEndTime = applicationMapper.findAuthEndTime(username, fileName, applicationId);
+            if (authEndTime == null || new Date().after(authEndTime)) {
+                response.sendError(HttpStatus.UNAUTHORIZED.value(), "授权期限已过或未授权下载该文件");
+                return;
+            }
+
+            // 设置下载响应头
+            response.reset();
+            response.setContentType("application/octet-stream");
+            response.setCharacterEncoding("utf-8");
+            String encodedFileName = URLEncoder.encode(fileName + ".csv", StandardCharsets.UTF_8.name());
+            response.setHeader("Content-Disposition", "attachment;filename=" + encodedFileName);
+            response.setContentLengthLong(file.length()); // 可选
+
+            // 使用 try-with-resources 自动关闭资源
+            try (InputStream in = Files.newInputStream(file.toPath());
+                 OutputStream out = response.getOutputStream()) {
+
+                byte[] buffer = new byte[8192]; // 更大缓冲更高效
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);
+                }
+                out.flush();
+            }
+
+        } catch (Exception e) {
+            // 打印完整异常堆栈
+            e.printStackTrace();
+            try {
+                response.sendError(HttpStatus.INTERNAL_SERVER_ERROR.value(), "文件下载失败: " + e.getMessage());
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+        }
+    }
+
 
     // **将字节数组转换为十六进制字符串的方法**
     private String bytesToHex(byte[] bytes) {

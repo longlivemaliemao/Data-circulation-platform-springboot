@@ -6,9 +6,9 @@ import com.example.demo.Model.User;
 import com.example.demo.Service.CustomUserDetailsService;
 import com.example.demo.Service.ECDHService;
 import com.example.demo.Util.JwtTokenUtil;
+import com.example.demo.Util.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -140,7 +140,7 @@ public class AdminController {
     public APIResponse<String> updateMPI(@RequestBody Map<String, Object> requestBody, HttpSession session) {
         try {
             // 获取当前登录用户的 ID
-            String originUserName = SecurityContextHolder.getContext().getAuthentication().getName();
+            String originUserName = UserContext.getUsername();
             int id = userMapper.findIdByUsername(originUserName);
 
             // 从请求体中获取更新字段

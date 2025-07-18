@@ -11,6 +11,8 @@ import java.sql.Timestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GetCompletedDataDTO {
+    Long pageNum;
+    Long pageSize;
     int taskId;
     String fileName;
     String creatorName;

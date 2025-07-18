@@ -1,5 +1,7 @@
 package com.example.demo.Controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.demo.Mapper.*;
 import com.example.demo.Model.*;
 import com.example.demo.Util.UserContext;
@@ -855,16 +857,28 @@ public class TaskController {
 //        }
 //    }
     @GetMapping("/getCompletedData")
-    public APIResponse<List<DataRequset>> getCompletedData(GetCompletedDataDTO getCompletedDataDTO) {
+    public APIResponse<MyPage<DataRequset>> getCompletedData(
+            @RequestParam(value = "pageNum", defaultValue = "1") Long pageNum,
+            @RequestParam(value = "pageSize", defaultValue = "10") Long pageSize,
+            GetCompletedDataDTO getCompletedDataDTO) {
         try {
-            // 返回成功响应
-            return APIResponse.success(taskMapper.selectCompletedDataTasks(
+            Page <DataRequset> page = new Page<>();
+            page.setCurrent(pageNum);
+            page.setSize(pageSize);
+            IPage<DataRequset> iPage = taskMapper.selectCompletedDataTasks(
+                    page,
                     getCompletedDataDTO.getTaskId(),
                     getCompletedDataDTO.getFileName(),
                     getCompletedDataDTO.getCreatorName(),
                     getCompletedDataDTO.getBegin(),
-                    getCompletedDataDTO.getEnd())
-            );
+                    getCompletedDataDTO.getEnd());
+            MyPage<DataRequset> myPage = new MyPage<>();
+            myPage.setPageNum(iPage.getCurrent());
+            myPage.setPageSize(iPage.getSize());
+            myPage.setResult(iPage.getRecords());
+            myPage.setTotal(iPage.getTotal());
+            // 返回成功响应
+            return APIResponse.success(myPage);
         } catch (Exception e) {
             // 打印异常日志并返回错误响应
             e.printStackTrace();

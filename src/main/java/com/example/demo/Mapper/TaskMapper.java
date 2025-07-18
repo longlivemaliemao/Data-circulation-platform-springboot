@@ -1,5 +1,7 @@
 package com.example.demo.Mapper;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.demo.Model.DataRequset;
 import com.example.demo.Model.Task;
 import org.apache.ibatis.annotations.*;
@@ -39,7 +41,7 @@ public interface TaskMapper {
     @Select("SELECT * FROM task WHERE status = 'completed' AND task_type = '签名'")
     List<Task> findCompletedDataTasks();
 
-    List<DataRequset> selectCompletedDataTasks(int taskId, String fileName, String creatorName, Timestamp begin, Timestamp end);
+    IPage<DataRequset> selectCompletedDataTasks(Page<DataRequset> page, int taskId, String fileName, String creatorName, Timestamp begin, Timestamp end);
 
     @Select("SELECT task_id FROM task WHERE status = 'completed' AND task_type = '签名'")
     List<Integer> findCompletedDataTaskIDs();

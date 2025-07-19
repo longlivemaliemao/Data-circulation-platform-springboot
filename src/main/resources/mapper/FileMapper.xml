@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.Mapper.FileMapper">
+
+    <!-- 显式映射查询结果到 FileInform 类 -->
+    <resultMap id="FileInformMap" type="com.example.demo.Model.FileInform">
+        <result property="fileName" column="file_name"/>
+        <result property="filePath" column="file_path" />
+        <result property="authEndTime" column="auth_endtime"/>
+    </resultMap>
+
+    <select id="selectFileInform" resultMap="FileInformMap">
+        select f.FILE_NAME, f.FILE_PATH ,a.AUTH_ENDTIME from FILES f join APPLICATION a
+        on f.FILE_NAME = a.FILE_NAME AND f.CREATOR_NAME = a.DATAUSER
+        where a.STATUS = '签名已完成' and a.USERNAME = #{username} and a.ID = #{applicationId}
+    </select>
+
+</mapper>

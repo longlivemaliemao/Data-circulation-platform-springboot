@@ -31,6 +31,8 @@ mybatis-plus:
   type-aliases-package: com.example.demo.Model
 
 logging:
+  level:
+    com.example.demo: DEBUG
   logback:
     rollingpolicy:
       file-name-pattern: logs/application-%d{yyyy-MM-dd}.%i.log

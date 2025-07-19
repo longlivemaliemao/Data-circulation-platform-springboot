@@ -4,6 +4,7 @@ import com.example.demo.Mapper.ApplicationMapper;
 import com.example.demo.Mapper.FileMapper;
 import com.example.demo.Model.APIResponse;
 import com.example.demo.Model.File;
+import com.example.demo.Model.FileInform;
 import com.example.demo.Service.ECDHService;
 import com.example.demo.Util.DownloadTokenUtil;
 import com.example.demo.Util.UserContext;
@@ -27,7 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -110,8 +110,7 @@ public class FileController {
             // 在保存分片前，先进行数据库检查
             if (chunkIndex == 0) {
                 // 对于第一个分片，检查文件名是否已存在
-                List<String> fileNames = fileMapper.findFileByCreatorName(creatorName);
-                if (fileNames.contains(fileName)) {
+                if (fileMapper.findFileByFileName(creatorName, fileName) != null) {
                     return APIResponse.error(500, "文件名已被使用");
                 }
                 // 插入文件元数据
@@ -121,9 +120,9 @@ public class FileController {
                 }
             } else {
                 // 对于后续分片，快速检查数据库中文件状态
-                Map<String, String> c = fileMapper.selectChunksByFileName(creatorName, fileName);
+                File file = fileMapper.findFileByFileName(creatorName, fileName);
                 // 如果文件记录不存在（首个分片未成功），或文件已标记为完成，则拒绝
-                if (c == null || c.get("UPLOADED_CHUNKS").equals(c.get("TOTAL_CHUNKS"))) {
+                if (file == null || file.getUploadedChunks() == file.getTotalChunks()) {
                     deleteChunks(totalChunks, fileId); // 清理可能已保存的无效分片
                     return APIResponse.error(500, "禁止上传分片：文件不存在或已完成");
                 }
@@ -154,22 +153,38 @@ public class FileController {
         }
     }
 
+    @GetMapping("/stopUpload")
+    @PreAuthorize("hasAuthority('数据提供方')")
+    public APIResponse<String> stopUpload(@RequestParam("fileName") String fileName) {
+        try {
+            String creatorName = UserContext.getUsername();
+            fileName = Paths.get(fileName).getFileName().toString();
+            File file = fileMapper.findFileByFileName(creatorName, fileName);
+            if (file == null || file.getUploadedChunks() == file.getTotalChunks()) {
+                return APIResponse.error(400, "该文件已上传完成或该文件不存在");
+            }
+            fileMapper.deleteFilesByCreatorName(creatorName, fileName);
+            deleteChunks(file.getTotalChunks(), file.getFileId());
+            return APIResponse.success("停止下载成功");
+        }catch (Exception e) {
+            return APIResponse.error(500,"服务器内部错误: " + e.getMessage());
+        }
+    }
+
 
     @GetMapping("/getDownloadSign")
-    public APIResponse<String> getDownloadSign(@RequestParam("fileName") String fileName,
-                                              @RequestParam("applicationId") int applicationId) {
+    public APIResponse<String> getDownloadSign(@RequestParam("applicationId") int applicationId) {
         try {
             String username = UserContext.getUsername();
-            File fileRecord = fileMapper.findFileByFileName(fileName);
-            java.io.File file = new java.io.File(fileRecord.getFilePath(), fileName + ".csv");
+            FileInform fileInform = fileMapper.selectFileInform(username, applicationId);
+            java.io.File file = new java.io.File(fileInform.getFilePath(), fileInform.getFileName() + ".csv");
             if (!file.exists()) {
                 return APIResponse.error(404, "文件不存在");
             }
-            Date authEndTime = applicationMapper.findAuthEndTime(username, fileName, applicationId);
-            if (authEndTime == null) {
-                return  APIResponse.error(404, "该数据未被授权下载");
+            if (new Date().after(fileInform.getAuthEndTime())) {
+                return APIResponse.error(404, "该数据授权已过期");
             }
-            String signedToken = DownloadTokenUtil.generateDownloadToken(fileName, username, applicationId);
+            String signedToken = DownloadTokenUtil.generateDownloadToken(fileInform.getFileName(), username, applicationId);
             return APIResponse.success(signedToken);
         } catch (Exception e) {
             return APIResponse.error(500, "生成下载链接失败: " + e.getMessage());
@@ -180,12 +195,10 @@ public class FileController {
     public void downloadFile(@PathVariable String signedToken, HttpServletResponse response) throws IOException {
         try {
             DownloadTokenUtil.ParsedToken token = DownloadTokenUtil.validateDownloadToken(signedToken);
+            FileInform fileInform = fileMapper.selectFileInform(token.username, token.applicationId);
+            java.io.File file = new java.io.File(fileInform.getFilePath(), token.fileName + ".csv");
 
-            File fileRecord = fileMapper.findFileByFileName(token.fileName);
-            java.io.File file = new java.io.File(fileRecord.getFilePath(), token.fileName + ".csv");
-
-            Date authEndTime = applicationMapper.findAuthEndTime(token.username, token.fileName, token.applicationId);
-            if (new Date().after(authEndTime)) {
+            if (new Date().after(fileInform.getAuthEndTime())) {
                 response.sendError(403, "授权已过期");
                 return;
             }
@@ -220,15 +233,16 @@ public class FileController {
         try {
             // 文件名合法化，防止路径穿越
             fileName = Paths.get(fileName).getFileName().toString();
+            String creatorName = UserContext.getUsername();
 
             // 从数据库获取文件记录
-            File fileRecord = fileMapper.findFileByFileName(fileName);
-            if (fileRecord == null) {
+            FileInform fileInform = fileMapper.selectFileInform(creatorName, applicationId);
+            if (fileInform == null) {
                 response.sendError(HttpStatus.NOT_FOUND.value(), "文件记录不存在");
                 return;
             }
 
-            String filePath = fileRecord.getFilePath();
+            String filePath = fileInform.getFilePath();
             java.io.File file = new java.io.File(filePath, fileName + ".csv");
 
             if (!file.exists()) {
@@ -236,9 +250,7 @@ public class FileController {
                 return;
             }
 
-            String username = UserContext.getUsername();
-            Date authEndTime = applicationMapper.findAuthEndTime(username, fileName, applicationId);
-            if (authEndTime == null || new Date().after(authEndTime)) {
+            if (new Date().after(fileInform.getAuthEndTime())) {
                 response.sendError(HttpStatus.UNAUTHORIZED.value(), "授权期限已过或未授权下载该文件");
                 return;
             }

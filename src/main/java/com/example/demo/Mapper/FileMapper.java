@@ -2,13 +2,10 @@ package com.example.demo.Mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.example.demo.Model.File;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import com.example.demo.Model.FileInform;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
-import java.util.Map;
 
 @Mapper
 public interface FileMapper extends BaseMapper<File> {
@@ -27,8 +24,8 @@ public interface FileMapper extends BaseMapper<File> {
     List<File> findFilesByCreatorName(String creator_name);
 
     // 根据 file_name 查找 file
-    @Select("SELECT * FROM files WHERE file_name = #{fileName}")
-    File findFileByFileName(String fileName);
+    @Select("SELECT * FROM files WHERE creator_name = #{creator_name} AND file_name = #{fileName}")
+    File findFileByFileName(String creator_name, String fileName);
 
     // 根据 file_name 查找 file_id
     @Select("SELECT file_id FROM files WHERE file_name = #{fileName}")
@@ -41,7 +38,9 @@ public interface FileMapper extends BaseMapper<File> {
     @Update("UPDATE files SET UPLOADED_CHUNKS = #{uploadedChunks} WHERE file_id = #{fileId}")
     void updateChunksByFileID(int uploadedChunks, String fileId);
 
-    @Select("select UPLOADED_CHUNKS, TOTAL_CHUNKS from FILES where CREATOR_NAME = #{creator_name} AND FILE_NAME = #{fileName}")
-    Map<String, String> selectChunksByFileName(String creator_name, String fileName);
+    @Delete("delete from FILES where CREATOR_NAME = #{creator_name} and FILE_NAME = #{fileName}")
+    void deleteFilesByCreatorName(String creator_name, String fileName);
+
+    FileInform selectFileInform(String username, int applicationId);
 
 }

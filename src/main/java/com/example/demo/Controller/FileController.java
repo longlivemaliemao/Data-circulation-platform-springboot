@@ -1,6 +1,5 @@
 package com.example.demo.Controller;
 
-import com.example.demo.Mapper.ApplicationMapper;
 import com.example.demo.Mapper.FileMapper;
 import com.example.demo.Model.APIResponse;
 import com.example.demo.Model.File;
@@ -41,12 +40,6 @@ public class FileController {
 
     @Autowired
     private FileMapper fileMapper;
-
-    @Autowired
-    private ApplicationMapper applicationMapper;
-
-    @Autowired
-    private UserContext  userContext;
 
     @GetMapping("/filesName")
     @PreAuthorize("hasAuthority('数据提供方')")
@@ -184,7 +177,7 @@ public class FileController {
             if (new Date().after(fileInform.getAuthEndTime())) {
                 return APIResponse.error(404, "该数据授权已过期");
             }
-            String signedToken = DownloadTokenUtil.generateDownloadToken(fileInform.getFileName(), username, applicationId);
+            String signedToken = DownloadTokenUtil.generateDownloadToken(username, applicationId);
             return APIResponse.success(signedToken);
         } catch (Exception e) {
             return APIResponse.error(500, "生成下载链接失败: " + e.getMessage());
@@ -196,7 +189,7 @@ public class FileController {
         try {
             DownloadTokenUtil.ParsedToken token = DownloadTokenUtil.validateDownloadToken(signedToken);
             FileInform fileInform = fileMapper.selectFileInform(token.username, token.applicationId);
-            java.io.File file = new java.io.File(fileInform.getFilePath(), token.fileName + ".csv");
+            java.io.File file = new java.io.File(fileInform.getFilePath(), fileInform.getFileName() + ".csv");
 
             if (new Date().after(fileInform.getAuthEndTime())) {
                 response.sendError(403, "授权已过期");
@@ -207,7 +200,7 @@ public class FileController {
             response.setContentType("application/octet-stream");
             response.setCharacterEncoding("utf-8");
             response.setContentLength((int) file.length());
-            response.setHeader("Content-Disposition", "attachment;filename=" + token.fileName + ".csv");
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileInform.getFileName() + ".csv");
 
             try (BufferedInputStream bis = new BufferedInputStream(Files.newInputStream(file.toPath()));
                  OutputStream os = response.getOutputStream()) {

@@ -5,7 +5,6 @@ import com.example.demo.Model.APIResponse;
 import com.example.demo.Service.ECDHService;
 import com.example.demo.Util.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
@@ -23,8 +22,6 @@ public class HomeController {
     private ECDHService dhService;
     // 注入 PasswordEncoder，用于对密码进行加密和验证
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
     /**
      * 根据用户名模糊查询用户
      * @param username 用户名搜索关键字

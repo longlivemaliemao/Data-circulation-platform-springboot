@@ -82,9 +82,6 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write("{\"error\": \"无效的token\"}");
-        }finally {
-            SecurityContextHolder.clearContext();
-            UserContext.clear();
         }
     }
 }

@@ -192,7 +192,9 @@ public class FileController {
             java.io.File file = new java.io.File(fileInform.getFilePath(), fileInform.getFileName() + ".csv");
 
             if (new Date().after(fileInform.getAuthEndTime())) {
-                response.sendError(403, "授权已过期");
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"error\": \"授权已过期\"}");
                 return;
             }
 
@@ -212,9 +214,13 @@ public class FileController {
             }
 
         } catch (IllegalArgumentException e) {
-            response.sendError(401, "下载链接无效或已过期");
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"error\": \"下载链接无效或已过期\"}");
         } catch (Exception e) {
-            response.sendError(500, "服务器内部错误: " + e.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"error\": \"服务器内部错误:" +  e.getMessage() + "\"}");
         }
     }
 

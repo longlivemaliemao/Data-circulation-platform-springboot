@@ -37,7 +37,8 @@ public class ApiSignatureFilter extends OncePerRequestFilter {
         boolean isPostOrPut = "POST".equalsIgnoreCase(request.getMethod()) || "PUT".equalsIgnoreCase(request.getMethod());
         // 只处理 application/json 类型的 POST/PUT 请求
         String contentType = request.getContentType();
-        if (!isPostOrPut || contentType == null || !contentType.contains("application/json")) {
+        if (!isPostOrPut || contentType == null || !contentType.contains("application/json")
+                || request.getRequestURI().equals("/exchange-keys")) {
             filterChain.doFilter(request, response);
             return;
         }

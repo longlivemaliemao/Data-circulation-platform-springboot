@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // 禁用 CSRF
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests(auth -> auth
-                        .antMatchers("/exchange-keys","/login","/register","/forget_password").permitAll() // 允许这些路径公开访问
+                        .antMatchers("/exchange-keys","/login","/register","/forget_password","/download/**").permitAll() // 允许这些路径公开访问
                         .anyRequest().authenticated() // 其余请求需登录认证
                 )
                 .addFilterBefore(authenticationTokenFilter, UsernamePasswordAuthenticationFilter.class)
@@ -72,14 +72,19 @@ public class SecurityConfig {
                             jsessionidCookie.setMaxAge(0);          // 0 表示立即删除
                             httpServletResponse.addCookie(jsessionidCookie);
                             SecurityContextHolder.clearContext();
-                            httpServletResponse.setStatus(HttpServletResponse.SC_OK);
-                            httpServletResponse.setContentType("application/json;charset=UTF-8");
-                            try {
-                                httpServletResponse.getWriter().write("{\"success\": \"退出登录成功\"}");
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }).logoutSuccessUrl("/dataflow5"); // 允许注销操作
+                        })
+                .logoutSuccessHandler((httpServletRequest, httpServletResponse,
+                                       authentication)->{
+                    httpServletResponse.setStatus(HttpServletResponse.SC_OK);
+                    httpServletResponse.setContentType("application/json;charset=UTF-8");
+                    try {
+                        httpServletResponse.getWriter().write(
+                                "{\"code\": 200,\"message\": \"Success\", \"data\":null}"
+                        );
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }); // 允许注销操作
 
         return http.build();
     }

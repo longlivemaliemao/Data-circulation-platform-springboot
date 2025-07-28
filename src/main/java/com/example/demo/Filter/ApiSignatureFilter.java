@@ -57,8 +57,7 @@ public class ApiSignatureFilter extends OncePerRequestFilter {
 
             // 2. 检查是否存在 sign 和 timestamp 字段
             if (!topLevelPayloadNode.has("sign") || !topLevelPayloadNode.has("timestamp")) {
-                filterChain.doFilter(requestToUse, response);
-                return;
+                throw new SecurityException("sign or timestamp is empty");
             }
 
             logger.info("检测到签名请求，开始验证...");
